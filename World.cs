@@ -26,6 +26,19 @@ namespace SharpStory
             map = new Land[width, height];
         }
 
+        public void Render()
+        {
+            for (int i = 0; i < this.WorldWidth; i++)
+            {
+                for (int j = 0; j < this.WorldHeight; j++)
+                {
+                    Console.SetCursorPosition(i + 1, j + 1);
+                    Console.BackgroundColor = (ConsoleColor)(int)this.map[i, j].Type;
+                    Console.WriteLine(" ");
+                }
+            }
+        }
+
         public void GenerateRandomWorld()
         {
             Random randomLandType = new Random();
@@ -33,41 +46,42 @@ namespace SharpStory
             {
                 for (int y = 0; y < worldHeight; y++)
                 {
-                    map[x, y] = new Land(new Vector2(x, y), (Land.LandType)randomLandType.Next(0, 5));
+                    map[x, y] = new Land(new Vector2(x, y), (Land.LandType)randomLandType.Next(0, Enum.GetValues(typeof(Land.LandType)).Length));
                 }
             }
         }
 
         public void GenerateWorldCA(int iterations)
         {
+            // TODO: Change it to a non toroidal world, possibly make it grid based
             for (int i = 0; i < iterations; i++)
             {
-                for (int x = 0; x < worldWidth-1; x++)
+                for (int x = 0; x < worldWidth - 1; x++)
                 {
-                    for (int y = 0; y < worldHeight-1; y++)
+                    for (int y = 0; y < worldHeight - 1; y++)
                     {
-                        Vector2[,] CAMatrix = RandomGenerationUtils.CellularAutomataMatrix(new Vector2(x, y), WorldWidth, WorldHeight);
+                        Vector2[,] CAMatrix = RandomGenerationUtils.NeighboursMatrix(new Vector2(x, y), WorldWidth, WorldHeight);
                         List<Land.LandType> landTypeCounter = new List<Land.LandType>();
                         foreach (var item in CAMatrix)
                         {
                             try
                             {
                                 landTypeCounter.Add(map[(int)item.X, (int)item.Y].Type);
-
                             }
+
                             catch (System.IndexOutOfRangeException)
                             {
-                                System.Console.WriteLine(worldWidth + " | " + worldHeight);
-                                System.Console.WriteLine("---------------------");
-                                System.Console.WriteLine(item.X + " | " + item.Y + "\n\n");
+                                string logging = "\n" + worldWidth + " | " + worldHeight + "\n" +
+                                "---------------------\n" +
+                                item.X + " | " + item.Y + "\n\n";
+
+                                Utility.Log(logging, "bullshit.log");
                             }
                         }
 
                         int HighestCountType = RandomGenerationUtils.CountOccurences(landTypeCounter);
                         Console.SetCursorPosition(0, 0);
-                        using (StreamWriter w = File.AppendText("LandTypes.log")){
-                        Utility.Log(HighestCountType.ToString() + " : " + x.ToString() + " | " + y.ToString(), w);
-                        }
+                        Utility.Log(((Land.LandType)HighestCountType).ToString() + " : " + x.ToString() + " | " + y.ToString(), "LandTypes.log");
                         map[x, y].Type = (Land.LandType)HighestCountType;
 
                     }

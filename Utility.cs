@@ -26,29 +26,59 @@ namespace SharpStory
             }
         }
 
-        public static void Log(string logMessage, TextWriter w)
+        public static void Log(string logMessage, string logFile)
         {
-            w.Write("\r\nLog Entry : ");
-            w.WriteLine($"  :{logMessage}");
-            w.WriteLine("-------------------------------");
+            using (StreamWriter w = File.AppendText(logFile))
+            {
+                w.Write("\r\nLog Entry : ");
+                w.WriteLine($"  :{logMessage}");
+                w.WriteLine("-------------------------------");
+            }
+        }
+
+        public static void CleanLog()
+        {
+            string[] files = Directory.GetFiles(".", "*.log"); ;
+            foreach (var file in files)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
         }
     }
 
     public class RandomGenerationUtils
     {
-        public static Vector2[,] CellularAutomataMatrix(Vector2 coordinates, int worldWidth, int WorldHeight)
+        public static Vector2[,] NeighboursMatrix(Vector2 coordinates, int WorldWidth, int WorldHeight)
         {
+            /// <summary>Create a 3x3 matrix of coordinates to compare 
+            ///          land type values for the cellular automaton.</summary>
             Vector2[,] new_coords = new Vector2[3, 3];
-            // TODO : Code like this is how you get fired.
-            // Also probably easily fixable with lambdas ?
-            // Seriously tho, fix this shit
-            new_coords[0, 0] = coordinates.X == 0 | coordinates.Y == 0 ? coordinates : coordinates + new Vector2(-1);
-            new_coords[1, 0] = coordinates.Y == 0 ? coordinates : coordinates + new Vector2(0, -1);
-            new_coords[2, 0] = coordinates.X == worldWidth | coordinates.Y == 0 ? coordinates : coordinates + new Vector2(1, -1);
-            new_coords[1, 1] = coordinates;
-            new_coords[0, 1] = coordinates.X == 0 ? coordinates : coordinates + new Vector2(-1, 0);
-            new_coords[0, 2] = coordinates.X == 0 | coordinates.Y == WorldHeight ? coordinates : coordinates + new Vector2(-1, 1);
-            new_coords[2, 2] = coordinates.X == worldWidth | coordinates.Y == WorldHeight ? coordinates : coordinates + new Vector2(1);
+            coordinates -= new Vector2(1);
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (coordinates == new Vector2(-1))
+                    {
+                        new_coords[i, j] = new Vector2(WorldWidth - 1, WorldHeight - 1);
+                    }
+                    else if (coordinates.X < 0)
+                    {
+                        new_coords[i, j] = new Vector2(WorldWidth - 1, coordinates.Y);
+                    }
+                    else if (coordinates.Y < 0)
+                    {
+                        new_coords[i, j] = new Vector2(coordinates.X, WorldHeight - 1);
+                    }
+                    else
+                    {
+                        new_coords[i, j] = coordinates + new Vector2(i, j);
+                    }
+                }
+            }
             return new_coords;
         }
 
@@ -61,9 +91,8 @@ namespace SharpStory
             foreach (var item in list)
             {
                 // This particular line was legit just copied from stack overflow without any kind of thought put into it.
-                // TODO: Actually read how this works ? Linq is weird.
                 occurenceList[counter++] = ((from temp in list where temp.Equals(item) select temp).Count());
-
+                // Once written by the great Ali Laouichi. cpt is a programmer's best tool, you can never use it too much.
                 typelist[cpt++] = item;
 
             }
